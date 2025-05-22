@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:testproject/aboutyou.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'aboutyou.dart';
 import 'mealspage.dart';
 import 'loginpage.dart';
 
@@ -16,25 +17,65 @@ class _SignUpPageState extends State<SignUpPage> {
   String password = '';
   String confirmPassword = '';
 
-  final RegExp _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-  final RegExp _phoneRegex = RegExp(r'^\d{10,15}$'); // Supports most formats
+  final RegExp _emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+  );
 
-  void _signUp() {
+  final RegExp _phoneRegex = RegExp(r'^\d{10,15}$');
+
+  void _signUp() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AboutYouPage(
-            onNext: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => MealsPage()),
-              );
-            },
-          ),
-        ),
-      );
+      try {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
+
+        final user = response.user;
+        if (user != null) {
+          // Optional: Insert additional info to "profiles" table
+          await Supabase.instance.client
+              .from('profiles')
+              .insert({'id': user.id, 'name': name, 'phone': phone});
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AboutYouPage(
+                onNext: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => MealsPage()),
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          _showError("Signup failed. Please try again.");
+        }
+      } on AuthException catch (e) {
+        _showError(e.message);
+      } catch (e) {
+        _showError("Unexpected error occurred. Try again.");
+      }
     }
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -68,8 +109,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextFormField(
                   decoration: _inputDecoration('Enter your name'),
                   onChanged: (val) => name = val,
-                  validator: (val) =>
-                  val!.trim().isEmpty ? 'Please enter your name' : null,
+                  validator: (val) => val!.trim().isEmpty
+                      ? 'Please enter your name'
+                      : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
@@ -102,9 +144,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   obscureText: true,
                   decoration: _inputDecoration('Confirm your password'),
                   onChanged: (val) => confirmPassword = val,
-                  validator: (val) => val != password
-                      ? 'Passwords do not match'
-                      : null,
+                  validator: (val) =>
+                  val != password ? 'Passwords do not match' : null,
                 ),
                 SizedBox(height: 30),
                 SizedBox(
