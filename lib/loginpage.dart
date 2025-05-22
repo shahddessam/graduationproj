@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'aboutyou.dart';
 import 'signuppage.dart';
 
@@ -12,21 +13,53 @@ class _LoginPageState extends State<LoginPage> {
   String email = '';
   String password = '';
 
-  final RegExp _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+  final RegExp _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AboutYouPage(
-            onNext: () {
-              Navigator.pushReplacementNamed(context, '/goal');
-            },
-          ),
-        ),
-      );
+      try {
+        final response = await Supabase.instance.client.auth
+            .signInWithPassword(email: email, password: password);
+
+        final user = response.user;
+        if (user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AboutYouPage(
+                onNext: () {
+                  Navigator.pushReplacementNamed(context, '/goal');
+                },
+              ),
+            ),
+          );
+        } else {
+          _showError("Login failed. Please check your credentials.");
+        }
+      } on AuthException catch (e) {
+        _showError(e.message);
+      } catch (e) {
+        _showError("An unexpected error occurred. Try again.");
+      }
     }
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -60,9 +93,8 @@ class _LoginPageState extends State<LoginPage> {
                 TextFormField(
                   decoration: _inputDecoration('Enter your email'),
                   onChanged: (val) => email = val,
-                  validator: (val) => !_emailRegex.hasMatch(val!)
-                      ? 'Enter a valid email'
-                      : null,
+                  validator: (val) =>
+                      !_emailRegex.hasMatch(val!) ? 'Enter a valid email' : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
