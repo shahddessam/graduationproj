@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:testproject/aboutyou.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'aboutyou.dart';
 import 'mealspage.dart';
 import 'loginpage.dart';
 
@@ -16,25 +17,62 @@ class _SignUpPageState extends State<SignUpPage> {
   String password = '';
   String confirmPassword = '';
 
-  final RegExp _emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-  final RegExp _phoneRegex = RegExp(r'^\d{10,15}$'); // Supports most formats
+  final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+  final RegExp _phoneRegex = RegExp(r'^\d{10,15}$');
 
-  void _signUp() {
+  void _signUp() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AboutYouPage(
-            onNext: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => MealsPage()),
-              );
-            },
-          ),
-        ),
-      );
+      try {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
+
+        final user = response.user;
+        if (user != null) {
+          await Supabase.instance.client
+              .from('user')  // Make sure your table name matches
+              .insert({'user_id': user.id, 'name': name, 'phone': phone});
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AboutYouScreen(
+                onNext: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => MealsPage()),
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          _showError("Signup failed. Please try again.");
+        }
+      } on AuthException catch (e) {
+        _showError(e.message);
+      } catch (e) {
+        print('Unexpected error: $e');
+        _showError("Unexpected error occurred. Try again.");
+      }
     }
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -77,34 +115,30 @@ class _SignUpPageState extends State<SignUpPage> {
                   decoration: _inputDecoration('Enter your phone number'),
                   onChanged: (val) => phone = val,
                   validator: (val) => !_phoneRegex.hasMatch(val!)
-                      ? 'Enter a valid phone number (10-15 digits)'
+                      ? 'Enter a valid phone number (10–15 digits)'
                       : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   decoration: _inputDecoration('Enter your email'),
                   onChanged: (val) => email = val,
-                  validator: (val) => !_emailRegex.hasMatch(val!)
-                      ? 'Enter a valid email address'
-                      : null,
+                  validator: (val) =>
+                  !_emailRegex.hasMatch(val!) ? 'Enter a valid email address' : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   obscureText: true,
                   decoration: _inputDecoration('Enter your password'),
                   onChanged: (val) => password = val,
-                  validator: (val) => val!.length < 6
-                      ? 'Password must be at least 6 characters'
-                      : null,
+                  validator: (val) =>
+                  val!.length < 6 ? 'Password must be at least 6 characters' : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   obscureText: true,
                   decoration: _inputDecoration('Confirm your password'),
                   onChanged: (val) => confirmPassword = val,
-                  validator: (val) => val != password
-                      ? 'Passwords do not match'
-                      : null,
+                  validator: (val) => val != password ? 'Passwords do not match' : null,
                 ),
                 SizedBox(height: 30),
                 SizedBox(
@@ -187,7 +221,7 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget _socialButton(String assetPath) {
     return GestureDetector(
       onTap: () {
-        // Handle social login
+        // Handle social login here if needed
       },
       child: SizedBox(
         width: 50,
