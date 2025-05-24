@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testproject/goal.dart';
 
 class AboutYouScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
   String gender = '';
   String weight = '';
   String height = '';
-  String targetWeight = '';
+  String target_Weight = '';
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +43,6 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                   ),
                 ),
                 SizedBox(height: 30),
-
-                // Age input
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -65,8 +64,6 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                   onChanged: (val) => age = val,
                 ),
                 SizedBox(height: 20),
-
-                // Gender dropdown
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     labelText: 'Gender',
@@ -93,8 +90,6 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                   },
                 ),
                 SizedBox(height: 20),
-
-                // Weight input
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -116,8 +111,6 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                   onChanged: (val) => weight = val,
                 ),
                 SizedBox(height: 20),
-
-                // Height input
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -139,8 +132,6 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                   onChanged: (val) => height = val,
                 ),
                 SizedBox(height: 20),
-
-                // Target weight input
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -159,28 +150,46 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
                     }
                     return null;
                   },
-                  onChanged: (val) => targetWeight = val,
+                  onChanged: (val) => target_weight = val,
                 ),
                 SizedBox(height: 30),
-
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        // Save or process the data here if needed
+                        final supabase = Supabase.instance.client;
+                        final userId = supabase.auth.currentUser?.id;
 
-                        // Navigate to GoalScreen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => GoalScreen()),
-                        );
+                        if (userId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('User not logged in')),
+                          );
+                          return;
+                        }
 
-                        // Or call widget.onNext if you want to keep that logic
-                        // if (widget.onNext != null) {
-                        //   widget.onNext!();
-                        // }
+                        final response = await supabase.from('user').upsert({
+                          'user_id': user_id,
+                          'age': int.parse(age),
+                          'gender': gender,
+                          'weight': double.parse(weight),
+                          'height': double.parse(height),
+                          'target_weight': double.parse(target_weight),
+                        });
+
+                        if (response.error == null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => GoalScreen()),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Error: ${response.error!.message}')),
+                          );
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
