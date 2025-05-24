@@ -1,126 +1,205 @@
 import 'package:flutter/material.dart';
 import 'package:testproject/goal.dart';
 
-class AboutYouPage extends StatefulWidget {
-  final VoidCallback onNext;
+class AboutYouScreen extends StatefulWidget {
+  final VoidCallback? onNext;
 
-  const AboutYouPage({required this.onNext});
+  AboutYouScreen({Key? key, this.onNext}) : super(key: key);
 
   @override
-  State<AboutYouPage> createState() => _AboutYouPageState();
+  _AboutYouScreenState createState() => _AboutYouScreenState();
 }
 
-class _AboutYouPageState extends State<AboutYouPage> {
+class _AboutYouScreenState extends State<AboutYouScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController birthdayController = TextEditingController();
-  final TextEditingController heightController = TextEditingController();
-  final TextEditingController weightController = TextEditingController();
-  final TextEditingController targetWeightController = TextEditingController();
-
-  @override
-  void dispose() {
-    birthdayController.dispose();
-    heightController.dispose();
-    weightController.dispose();
-    targetWeightController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => GoalScreen()),
-      );
-    }
-  }
+  String age = '';
+  String gender = '';
+  String weight = '';
+  String height = '';
+  String targetWeight = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("About You"),
+        title: Text('About You'),
         backgroundColor: Colors.deepPurple,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Please fill in the following details",
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              SizedBox(height: 20),
-              _buildTextField(
-                controller: birthdayController,
-                label: "Birthday",
-                validator: (val) =>
-                val!.isEmpty ? "Please enter your birthday" : null,
-              ),
-              SizedBox(height: 20),
-              _buildTextField(
-                controller: heightController,
-                label: "Height (cm)",
-                keyboardType: TextInputType.number,
-                validator: (val) =>
-                val!.isEmpty ? "Enter your height" : null,
-              ),
-              SizedBox(height: 20),
-              _buildTextField(
-                controller: weightController,
-                label: "Weight (kg)",
-                keyboardType: TextInputType.number,
-                validator: (val) =>
-                val!.isEmpty ? "Enter your weight" : null,
-              ),
-              SizedBox(height: 20),
-              _buildTextField(
-                controller: targetWeightController,
-                label: "Target Weight (kg)",
-                keyboardType: TextInputType.number,
-                validator: (val) =>
-                val!.isEmpty ? "Enter your target weight" : null,
-              ),
-              SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    textStyle: TextStyle(fontSize: 18),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tell us more about you',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
                   ),
-                  child: Text("Next"),
                 ),
-              ),
-            ],
+                SizedBox(height: 30),
+
+                // Age input
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Your Age',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please enter your age';
+                    }
+                    final ageNum = int.tryParse(val);
+                    if (ageNum == null || ageNum <= 0) {
+                      return 'Enter a valid age';
+                    }
+                    return null;
+                  },
+                  onChanged: (val) => age = val,
+                ),
+                SizedBox(height: 20),
+
+                // Gender dropdown
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: 'Gender',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: ['Male', 'Female', 'Other']
+                      .map((gender) => DropdownMenuItem(
+                    value: gender,
+                    child: Text(gender),
+                  ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      gender = val ?? '';
+                    });
+                  },
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please select your gender';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 20),
+
+                // Weight input
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Weight (kg)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please enter your weight';
+                    }
+                    final w = double.tryParse(val);
+                    if (w == null || w <= 0) {
+                      return 'Enter a valid weight';
+                    }
+                    return null;
+                  },
+                  onChanged: (val) => weight = val,
+                ),
+                SizedBox(height: 20),
+
+                // Height input
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Height (cm)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please enter your height';
+                    }
+                    final h = double.tryParse(val);
+                    if (h == null || h <= 0) {
+                      return 'Enter a valid height';
+                    }
+                    return null;
+                  },
+                  onChanged: (val) => height = val,
+                ),
+                SizedBox(height: 20),
+
+                // Target weight input
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Target Weight (kg)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please enter your target weight';
+                    }
+                    final tw = double.tryParse(val);
+                    if (tw == null || tw <= 0) {
+                      return 'Enter a valid target weight';
+                    }
+                    return null;
+                  },
+                  onChanged: (val) => targetWeight = val,
+                ),
+                SizedBox(height: 30),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        // Save or process the data here if needed
+
+                        // Navigate to GoalScreen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => GoalScreen()),
+                        );
+
+                        // Or call widget.onNext if you want to keep that logic
+                        // if (widget.onNext != null) {
+                        //   widget.onNext!();
+                        // }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Next',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    TextInputType keyboardType = TextInputType.text,
-    required String? Function(String?) validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-      ),
-      validator: validator,
     );
   }
 }
