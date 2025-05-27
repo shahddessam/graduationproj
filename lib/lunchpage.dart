@@ -1,37 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LunchPage extends StatelessWidget {
+class LunchPage extends StatefulWidget {
+  @override
+  _LunchPageState createState() => _LunchPageState();
+}
+
+class _LunchPageState extends State<LunchPage> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> lunchData = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLunchPlan();
+  }
+
+  Future<void> fetchLunchPlan() async {
+    final userId = supabase.auth.currentUser?.id;
+
+    final response = await supabase
+        .from('users_meals')
+        .select()
+        .eq('user_id', userId as Object)
+        .eq('meal_type', 'lunch');
+
+    setState(() {
+      lunchData = List<Map<String, dynamic>>.from(response);
+      isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // List of weekdays with corresponding lunch details
-    final List<Map<String, String>> lunchDetails = [
-      {'day': 'Monday', 'meal': 'Grilled chicken with vegetables and rice'},
-      {'day': 'Tuesday', 'meal': 'Spaghetti with marinara sauce'},
-      {'day': 'Wednesday', 'meal': 'Caesar salad with grilled shrimp'},
-      {'day': 'Thursday', 'meal': 'Turkey sandwich with chips and a pickle'},
-      {'day': 'Friday', 'meal': 'Veggie burger with sweet potato fries'},
-      {'day': 'Saturday', 'meal': 'Grilled cheese sandwich with tomato soup'},
-      {'day': 'Sunday', 'meal': 'Chicken and waffles with syrup'},
-    ];
-
     return Scaffold(
-      appBar: AppBar(title: Text('Lunch')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView.builder(
-          itemCount: lunchDetails.length,
-          itemBuilder: (context, index) {
-            return Card(
-              margin: EdgeInsets.symmetric(vertical: 8.0),
-              child: ListTile(
-                title: Text(lunchDetails[index]['day']!),
-                subtitle: Text(lunchDetails[index]['meal']!),
-                leading: Icon(Icons.lunch_dining),
-                contentPadding: EdgeInsets.all(16.0),
-              ),
-            );
-          },
-        ),
+      appBar: AppBar(title: Text('Lunch Plan')),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : lunchData.isEmpty
+          ? Center(child: Text('No lunch data found.'))
+          : ListView.builder(
+        itemCount: lunchData.length,
+        itemBuilder: (context, index) {
+          final day = lunchData[index]['day'];
+          final meal = lunchData[index]['meal_description'];
+          return Card(
+            margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+            child: ListTile(
+              title: Text(day),
+              subtitle: Text(meal),
+              leading: Icon(Icons.lunch_dining),
+              contentPadding: EdgeInsets.all(16.0),
+            ),
+          );
+        },
       ),
     );
   }
