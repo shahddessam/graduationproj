@@ -29,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => AboutYouScreen(),
+              builder: (_) => AboutYouScreen(onNext: () {  },),
             ),
           );
         } else {
