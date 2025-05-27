@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 import 'home.dart';
 
 class WeeksCommitScreen extends StatefulWidget {
@@ -41,10 +40,10 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
     }
 
     try {
-      // Parse weeks from durationLabel (e.g., "4 weeks" -> 4)
+      // Parse weeks from label (e.g., "4 weeks" -> 4)
       final weeks = int.parse(durationLabel.split(' ')[0]);
 
-      // Check if duration exists in duration table
+      // Check if duration already exists
       final durationResponse = await supabase
           .from('duration')
           .select('duration_id')
@@ -53,41 +52,45 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
 
       print('Duration response: $durationResponse');
 
-      String? durationId = durationResponse?['duration_id'] as String?;
+      String? durationId = durationResponse?['duration_id'];
 
-      // If duration doesn't exist, create it
-      if (durationId == null) {
-        final newDurationId = const Uuid().v4();
-        await supabase.from('duration').insert({
-          'duration_id': newDurationId,
-          'weeks': weeks,
-        });
-        durationId = newDurationId;
+      // If it doesn't exist, insert it and return the new ID
+      if (durationId == null || durationId.isEmpty) {
+        final insertResult = await supabase
+            .from('duration')
+            .insert({'weeks': weeks})
+            .select()
+            .single();
+
+        durationId = insertResult['duration_id'];
         print('Created new duration with ID: $durationId');
       }
 
-      // Update user_answers with duration_id
-      final updateResponse = await supabase
+      if (durationId == null || durationId.isEmpty) {
+        _showErrorSnackBar('Failed to get or create duration ID');
+        setState(() => isLoading = false);
+        return;
+      }
+
+      // ✅ Update user_answers with duration_id
+      final updateResult = await supabase
           .from('user_answers')
           .update({'duration_id': durationId})
           .eq('answer_id', widget.answerId);
 
-      if (updateResponse.error != null) {
-        _showErrorSnackBar('Error updating duration: ${updateResponse.error!.message}');
-      } else {
-        print('Duration updated successfully in user_answers');
-      }
+      print('Update result: $updateResult');
+
+      _showErrorSnackBar('Duration saved successfully ✅');
     } catch (error, stackTrace) {
       print('Error saving duration: $error\nStack trace: $stackTrace');
-      if (mounted) {
-        _showErrorSnackBar('Failed to save duration: $error');
-      }
+      _showErrorSnackBar('Failed to save duration: $error');
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
       }
     }
   }
+
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -102,11 +105,7 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => HomeScreen(
-              goal: widget.goal,
-              workoutTime: widget.workoutTime,
-              duration: selectedWeeks!,
-            ),
+            builder: (_) => HomeScreen(),
           ),
         );
       }
