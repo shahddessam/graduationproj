@@ -17,6 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String duration = "";
   bool isLoading = true;
 
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -54,57 +56,95 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    final pages = [
+      _buildHomeContent(),
+       ExercisesPage(),
+       MealsPage(),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your Fitness Overview"),
         centerTitle: true,
         backgroundColor: Colors.deepPurple,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              color: Colors.deepPurple[50],
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("🎯 Goal: $goal", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 10),
-                    Text("⏱ Workout Time: $workoutTime", style: const TextStyle(fontSize: 18)),
-                    const SizedBox(height: 10),
-                    Text("📅 Duration: $duration", style: const TextStyle(fontSize: 18)),
-                  ],
-                ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        selectedItemColor: Colors.deepPurple,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Exercises',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant),
+            label: 'Meals',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 4,
+            color: Colors.deepPurple[50],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("🎯 Goal: $goal", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 10),
+                  Text("⏱ Workout Time: $workoutTime", style: const TextStyle(fontSize: 18)),
+                  const SizedBox(height: 10),
+                  Text("📅 Duration: $duration", style: const TextStyle(fontSize: 18)),
+                ],
               ),
             ),
-            const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildOptionCard(
+          ),
+          const SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: _buildOptionCard(
                   title: "Exercises",
                   imagePath: 'assets/exercises.jpg',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesPage()));
+                    setState(() => _currentIndex = 1);
                   },
                 ),
-                _buildOptionCard(
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildOptionCard(
                   title: "Meals",
-                  imagePath: 'assets/meals.jpeg',
+                  imagePath: 'assets/meals.jpg',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => MealsPage()));
+                    setState(() => _currentIndex = 2);
                   },
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -118,13 +158,14 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         GestureDetector(
           onTap: onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              imagePath,
-              width: 150,
-              height: 150,
-              fit: BoxFit.cover,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
