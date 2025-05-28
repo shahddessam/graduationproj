@@ -3,16 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
 
 class WeeksCommitScreen extends StatefulWidget {
-  final String goal;
-  final String workoutTime;
-  final String answerId;
-
-  const WeeksCommitScreen({
-    Key? key,
-    required this.goal,
-    required this.workoutTime,
-    required this.answerId,
-  }) : super(key: key);
+  const WeeksCommitScreen({Key? key}) : super(key: key);
 
   @override
   State<WeeksCommitScreen> createState() => _WeeksCommitScreenState();
@@ -22,9 +13,9 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
   String? selectedWeeks;
   bool isLoading = false;
 
-  Future<void> saveDurationToUserAnswers(String durationLabel) async {
+  Future<void> saveDuration(String durationLabel) async {
     if (durationLabel.isEmpty) {
-      _showErrorSnackBar('Please select a duration');
+      _showSnackBar('Please select a duration');
       return;
     }
 
@@ -33,57 +24,33 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
 
-    if (userId == null) {
-      _showErrorSnackBar('User not logged in');
+    if (userId == null || userId.isEmpty) {
+      _showSnackBar('User not logged in');
       setState(() => isLoading = false);
       return;
     }
 
     try {
-      // Parse weeks from label (e.g., "4 weeks" -> 4)
-      final weeks = int.parse(durationLabel.split(' ')[0]);
-
-      // Check if duration already exists
-      final durationResponse = await supabase
-          .from('duration')
-          .select('duration_id')
-          .eq('weeks', weeks)
+      final existingUser = await supabase
+          .from('user')
+          .select()
+          .eq('user_id', userId)
           .maybeSingle();
 
-      print('Duration response: $durationResponse');
-
-      String? durationId = durationResponse?['duration_id'];
-
-      // If it doesn't exist, insert it and return the new ID
-      if (durationId == null || durationId.isEmpty) {
-        final insertResult = await supabase
-            .from('duration')
-            .insert({'weeks': weeks})
-            .select()
-            .single();
-
-        durationId = insertResult['duration_id'];
-        print('Created new duration with ID: $durationId');
+      if (existingUser == null) {
+        await supabase.from('user').insert({
+          'user_id': userId,
+          'duration': durationLabel,
+        });
+      } else {
+        await supabase.from('user')
+            .update({'duration': durationLabel})
+            .eq('user_id', userId);
       }
 
-      if (durationId == null || durationId.isEmpty) {
-        _showErrorSnackBar('Failed to get or create duration ID');
-        setState(() => isLoading = false);
-        return;
-      }
-
-      // ✅ Update user_answers with duration_id
-      final updateResult = await supabase
-          .from('user_answers')
-          .update({'duration_id': durationId})
-          .eq('answer_id', widget.answerId);
-
-      print('Update result: $updateResult');
-
-      _showErrorSnackBar('Duration saved successfully ✅');
-    } catch (error, stackTrace) {
-      print('Error saving duration: $error\nStack trace: $stackTrace');
-      _showErrorSnackBar('Failed to save duration: $error');
+      _showSnackBar('Duration saved successfully ✅');
+    } catch (error) {
+      _showSnackBar('Failed to save duration: $error');
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -91,8 +58,7 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
     }
   }
 
-
-  void _showErrorSnackBar(String message) {
+  void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -100,17 +66,15 @@ class _WeeksCommitScreenState extends State<WeeksCommitScreen> {
 
   void _onNextPressed() async {
     if (selectedWeeks != null) {
-      await saveDurationToUserAnswers(selectedWeeks!);
+      await saveDuration(selectedWeeks!);
       if (mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => HomeScreen()),
         );
       }
     } else {
-      _showErrorSnackBar('Please select a duration');
+      _showSnackBar('Please select a duration');
     }
   }
 
