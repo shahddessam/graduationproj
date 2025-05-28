@@ -58,8 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final pages = [
       _buildHomeContent(),
-       ExercisesPage(),
-       MealsPage(),
+      ExercisesPage(),
+      MealsPage(),
     ];
 
     return Scaffold(
@@ -162,9 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
             aspectRatio: 1,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
+              child: Container(
+                color: Colors.white,
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
