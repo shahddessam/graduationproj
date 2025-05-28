@@ -15,16 +15,15 @@ class _HomeScreenState extends State<HomeScreen> {
   String goal = "";
   String workoutTime = "";
   String duration = "";
-  List<String> plan = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchUserDataAndGeneratePlan();
+    fetchUserData();
   }
 
-  Future<void> fetchUserDataAndGeneratePlan() async {
+  Future<void> fetchUserData() async {
     try {
       final userId = supabase.auth.currentUser?.id;
 
@@ -39,47 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
           goal = response['goal'] ?? "Be More Active";
           workoutTime = response['workout_time'] ?? "30 mins";
           duration = response['duration'] ?? "4 weeks";
-          plan = _generatePlan(goal, workoutTime, duration);
           isLoading = false;
         });
       }
     } catch (e) {
       print("Error fetching user data: $e");
     }
-  }
-
-  List<String> _generatePlan(String goal, String time, String duration) {
-    int weeks = int.tryParse(duration.split(" ").first) ?? 4;
-    List<String> plan = [];
-
-    for (int i = 1; i <= weeks; i++) {
-      String weekPlan = "Week $i: ";
-
-      switch (goal) {
-        case "Lose Weight":
-          weekPlan += (i % 2 == 0) ? "HIIT + Core burn" : "Cardio + Full Body";
-          break;
-        case "Gain Muscle":
-          weekPlan += (i % 2 == 0) ? "Upper Body Strength" : "Leg Day & Core";
-          break;
-        case "Be More Active":
-          weekPlan += (i % 2 == 0) ? "Mobility + Stretching" : "Light Cardio + Fun Moves";
-          break;
-        case "Prenatal Fit":
-          weekPlan += (i % 2 == 0) ? "Breathing + Pelvic Floor" : "Gentle Strength & Stretch";
-          break;
-        case "Postnatal Fit":
-          weekPlan += (i % 2 == 0) ? "Core recovery + Stretches" : "Bodyweight Moves";
-          break;
-        default:
-          weekPlan += "Custom Fitness Plan";
-      }
-
-      weekPlan += " – $time per day";
-      plan.add(weekPlan);
-    }
-
-    return plan;
   }
 
   @override
@@ -91,66 +55,85 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Your Plan")),
-      body: Padding(
+      appBar: AppBar(
+        title: const Text("Your Fitness Overview"),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text("🎯 Goal: $goal", style: const TextStyle(fontSize: 18)),
-            Text("⏱ Workout Time: $workoutTime", style: const TextStyle(fontSize: 18)),
-            Text("📅 Duration: $duration", style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 20),
-            Text("📋 Your Weekly Plan", style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: plan.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(plan[index]),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              color: Colors.deepPurple[50],
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesPage()));
-                      },
-                      child: Image.asset('assets/exercises.jpg', width: 150, height: 150, fit: BoxFit.cover),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text("Exercises"),
+                    Text("🎯 Goal: $goal", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Text("⏱ Workout Time: $workoutTime", style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+                    Text("📅 Duration: $duration", style: const TextStyle(fontSize: 18)),
                   ],
                 ),
-                const SizedBox(width: 20),
-                Column(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => MealsPage()));
-                      },
-                      child: Image.asset('assets/meals.jpeg', width: 150, height: 150, fit: BoxFit.cover),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text("Meals"),
-                  ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildOptionCard(
+                  title: "Exercises",
+                  imagePath: 'assets/exercises.jpg',
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesPage()));
+                  },
+                ),
+                _buildOptionCard(
+                  title: "Meals",
+                  imagePath: 'assets/meals.jpeg',
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => MealsPage()));
+                  },
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOptionCard({
+    required String title,
+    required String imagePath,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              imagePath,
+              width: 150,
+              height: 150,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 }
