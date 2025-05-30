@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testproject/aboutyou.dart';
-import 'aboutyou.dart';  // <-- import your AboutYouScreen here
 import 'signuppage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,16 +20,16 @@ class _LoginPageState extends State<LoginPage> {
   void _login() async {
     if (_formKey.currentState!.validate()) {
       try {
-        final response = await Supabase.instance.client.auth
-            .signInWithPassword(email: email, password: password);
+        final response = await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
 
         final user = response.user;
         if (user != null) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => AboutYouScreen(onNext: () {  },),
-            ),
+            MaterialPageRoute(builder: (_) => AboutYouScreen(onNext: () {})),
           );
         } else {
           _showError("Login failed. Please check your credentials.");
@@ -46,16 +45,37 @@ class _LoginPageState extends State<LoginPage> {
   void _showError(String message) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Error"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text("OK"),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text("Error"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text("OK"),
+              ),
+            ],
           ),
-        ],
-      ),
+    );
+  }
+
+  // ✅ زر تسجيل الدخول عبر Google/Facebook باستخدام enum
+  Widget _socialButton(String assetPath, OAuthProvider provider) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          final supabase = Supabase.instance.client;
+
+          await supabase.auth.signInWithOAuth(
+            provider,
+            redirectTo:
+                'https://zkuqtmzesjblwlzgwnms.supabase.co/auth/v1/callback',
+          );
+        } catch (e) {
+          _showError("Failed to sign in with ${provider.name}");
+        }
+      },
+      child: SizedBox(width: 50, height: 50, child: Image.asset(assetPath)),
     );
   }
 
@@ -90,16 +110,22 @@ class _LoginPageState extends State<LoginPage> {
                 TextFormField(
                   decoration: _inputDecoration('Enter your email'),
                   onChanged: (val) => email = val,
-                  validator: (val) =>
-                  !_emailRegex.hasMatch(val!) ? 'Enter a valid email' : null,
+                  validator:
+                      (val) =>
+                          !_emailRegex.hasMatch(val!)
+                              ? 'Enter a valid email'
+                              : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   obscureText: true,
                   decoration: _inputDecoration('Enter your password'),
                   onChanged: (val) => password = val,
-                  validator: (val) =>
-                  val!.length < 6 ? 'Password must be at least 6 characters' : null,
+                  validator:
+                      (val) =>
+                          val!.length < 6
+                              ? 'Password must be at least 6 characters'
+                              : null,
                 ),
                 SizedBox(height: 30),
                 SizedBox(
@@ -129,12 +155,16 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
                 SizedBox(height: 10),
+                // ✅ أزرار تسجيل الدخول بالسوشيال
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _socialButton('assets/Facebook.png'),
+                    _socialButton(
+                      'assets/Facebook.png',
+                      OAuthProvider.facebook,
+                    ),
                     SizedBox(width: 20),
-                    _socialButton('assets/Google.png'),
+                    _socialButton('assets/Google.png', OAuthProvider.google),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -173,22 +203,7 @@ class _LoginPageState extends State<LoginPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
-  Widget _socialButton(String assetPath) {
-    return GestureDetector(
-      onTap: () {
-        // Handle social login
-      },
-      child: SizedBox(
-        width: 50,
-        height: 50,
-        child: Image.asset(assetPath),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
