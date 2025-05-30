@@ -17,7 +17,8 @@ class _SignUpPageState extends State<SignUpPage> {
   String password = '';
   String confirmPassword = '';
 
-  final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+  final RegExp _emailRegex =
+      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   final RegExp _phoneRegex = RegExp(r'^\d{10,15}$');
 
   void _signUp() async {
@@ -30,9 +31,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
         final user = response.user;
         if (user != null) {
-          await Supabase.instance.client
-              .from('user')  // Make sure your table name matches
-              .insert({'user_id': user.id, 'name': name, 'phone': phone});
+          await Supabase.instance.client.from('user').insert({
+            'user_id': user.id,
+            'name': name,
+            'phone': phone,
+          });
 
           Navigator.pushReplacement(
             context,
@@ -56,6 +59,28 @@ class _SignUpPageState extends State<SignUpPage> {
         print('Unexpected error: $e');
         _showError("Unexpected error occurred. Try again.");
       }
+    }
+  }
+
+  void _signInWithProvider(String provider) async {
+    try {
+      late OAuthProvider oauthProvider;
+
+      if (provider == 'facebook') {
+        oauthProvider = OAuthProvider.facebook;
+      } else if (provider == 'google') {
+        oauthProvider = OAuthProvider.google;
+      } else {
+        throw Exception('Unsupported provider');
+      }
+
+      await Supabase.instance.client.auth.signInWithOAuth(
+        oauthProvider,
+        redirectTo:
+            'https://zkuqtmzesjblwlzgwnms.supabase.co/auth/v1/callback',
+      );
+    } catch (e) {
+      _showError("Failed to sign in with $provider");
     }
   }
 
@@ -106,8 +131,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextFormField(
                   decoration: _inputDecoration('Enter your name'),
                   onChanged: (val) => name = val,
-                  validator: (val) =>
-                  val!.trim().isEmpty ? 'Please enter your name' : null,
+                  validator: (val) => val!.trim().isEmpty
+                      ? 'Please enter your name'
+                      : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
@@ -122,23 +148,26 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextFormField(
                   decoration: _inputDecoration('Enter your email'),
                   onChanged: (val) => email = val,
-                  validator: (val) =>
-                  !_emailRegex.hasMatch(val!) ? 'Enter a valid email address' : null,
+                  validator: (val) => !_emailRegex.hasMatch(val!)
+                      ? 'Enter a valid email address'
+                      : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   obscureText: true,
                   decoration: _inputDecoration('Enter your password'),
                   onChanged: (val) => password = val,
-                  validator: (val) =>
-                  val!.length < 6 ? 'Password must be at least 6 characters' : null,
+                  validator: (val) => val!.length < 6
+                      ? 'Password must be at least 6 characters'
+                      : null,
                 ),
                 SizedBox(height: 20),
                 TextFormField(
                   obscureText: true,
                   decoration: _inputDecoration('Confirm your password'),
                   onChanged: (val) => confirmPassword = val,
-                  validator: (val) => val != password ? 'Passwords do not match' : null,
+                  validator: (val) =>
+                      val != password ? 'Passwords do not match' : null,
                 ),
                 SizedBox(height: 30),
                 SizedBox(
@@ -171,9 +200,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _socialButton('assets/Facebook.png'),
+                    _socialButton('assets/Facebook.png', 'facebook'),
                     SizedBox(width: 20),
-                    _socialButton('assets/Google.png'),
+                    _socialButton('assets/Google.png', 'google'),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -218,11 +247,9 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _socialButton(String assetPath) {
+  Widget _socialButton(String assetPath, String provider) {
     return GestureDetector(
-      onTap: () {
-        // Handle social login here if needed
-      },
+      onTap: () => _signInWithProvider(provider),
       child: SizedBox(
         width: 50,
         height: 50,
